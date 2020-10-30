@@ -179,7 +179,7 @@ macro_rules! router {
 
     // call handler with params
     (@call_pure $context:expr, $handler:ident, $params:expr, $({$id:ident : $ty:ty : $idx:expr}),*) => {{
-        $handler(&$context, $({
+        $handler($context, $({
             let value = $params[$idx];
             router!(@parse_type value, $ty)
         }),*)
@@ -187,7 +187,7 @@ macro_rules! router {
 
     // Extract params from route, 0 params case
     (@call, $context:expr, $handler:ident, $params:expr, $($p:ident)*) => {{
-        $handler(&$context)
+        $handler($context)
     }};
 
     // Extract params from route, 1 params case
@@ -304,7 +304,7 @@ macro_rules! router {
                     result = closure();
                 }
             )*
-            result.unwrap_or_else(|| $default(&context))
+            result.unwrap_or_else(|| $default(context))
         }
     }};
 
@@ -324,7 +324,7 @@ macro_rules! router {
                     result = closure();
                 }
             )*
-            result.unwrap_or_else(|| $default(&context))
+            result.unwrap_or_else(|| $default(context))
         }
     }};
 
@@ -349,17 +349,17 @@ mod tests {
 
     #[test]
     fn test_real_life() {
-        let get_users = |_: &()| "get_users".to_string();
-        let post_users = |_: &()| "post_users".to_string();
-        let patch_users = |_: &(), id: u32| format!("patch_users({})", id);
-        let delete_users = |_: &(), id: u32| format!("delete_users({})", id);
-        let get_transactions = |_: &(), id: u32| format!("get_transactions({})", id);
-        let post_transactions = |_: &(), id: u32| format!("post_transactions({})", id);
+        let get_users = |_: ()| "get_users".to_string();
+        let post_users = |_: ()| "post_users".to_string();
+        let patch_users = |_: (), id: u32| format!("patch_users({})", id);
+        let delete_users = |_: (), id: u32| format!("delete_users({})", id);
+        let get_transactions = |_: (), id: u32| format!("get_transactions({})", id);
+        let post_transactions = |_: (), id: u32| format!("post_transactions({})", id);
         let patch_transactions =
-            |_: &(), id: u32, hash: String| format!("patch_transactions({}, {})", id, hash);
+            |_: (), id: u32, hash: String| format!("patch_transactions({}, {})", id, hash);
         let delete_transactions =
-            |_: &(), id: u32, hash: String| format!("delete_transactions({}, {})", id, hash);
-        let fallback = |_: &()| "404".to_string();
+            |_: (), id: u32, hash: String| format!("delete_transactions({}, {})", id, hash);
+        let fallback = |_: ()| "404".to_string();
 
         let router = router!(
             GET / => get_users,
@@ -429,8 +429,8 @@ mod tests {
     #[allow(unused_mut)]
     #[test]
     fn test_home() {
-        let get_home = |_: &()| "get_home";
-        let unreachable = |_: &()| unreachable!();
+        let get_home = |_: ()| "get_home";
+        let unreachable = |_: ()| unreachable!();
         let router = router!(
             GET / => get_home,
             _ => unreachable
@@ -440,9 +440,9 @@ mod tests {
 
     #[test]
     fn test_fallback() {
-        let home = |_: &()| "home";
-        let users = |_: &()| "users";
-        let fallback = |_: &()| "fallback";
+        let home = |_: ()| "home";
+        let users = |_: ()| "users";
+        let fallback = |_: ()| "fallback";
         let router = router!(
             GET / => home,
             POST /users => users,
@@ -457,16 +457,16 @@ mod tests {
 
     #[test]
     fn test_verbs() {
-        let get_test = |_: &()| Method::GET;
-        let post_test = |_: &()| Method::POST;
-        let put_test = |_: &()| Method::PUT;
-        let patch_test = |_: &()| Method::PATCH;
-        let delete_test = |_: &()| Method::DELETE;
-        let connect_test = |_: &()| Method::CONNECT;
-        let options_test = |_: &()| Method::OPTIONS;
-        let trace_test = |_: &()| Method::TRACE;
-        let head_test = |_: &()| Method::HEAD;
-        let panic_test = |_: &()| unreachable!();
+        let get_test = |_: ()| Method::GET;
+        let post_test = |_: ()| Method::POST;
+        let put_test = |_: ()| Method::PUT;
+        let patch_test = |_: ()| Method::PATCH;
+        let delete_test = |_: ()| Method::DELETE;
+        let connect_test = |_: ()| Method::CONNECT;
+        let options_test = |_: ()| Method::OPTIONS;
+        let trace_test = |_: ()| Method::TRACE;
+        let head_test = |_: ()| Method::HEAD;
+        let panic_test = |_: ()| unreachable!();
         let router = router!(
             GET /users => get_test,
             POST /users => post_test,
@@ -493,22 +493,22 @@ mod tests {
 
     #[test]
     fn test_params_number() {
-        let zero = |_: &()| String::new();
-        let one = |_: &(), p1: String| format!("{}", &p1);
-        let two = |_: &(), p1: String, p2: String| format!("{}{}", &p1, &p2);
-        let three = |_: &(), p1: String, p2: String, p3: String| format!("{}{}{}", &p1, &p2, &p3);
-        let four = |_: &(), p1: String, p2: String, p3: String, p4: String| {
+        let zero = |_: ()| String::new();
+        let one = |_: (), p1: String| format!("{}", &p1);
+        let two = |_: (), p1: String, p2: String| format!("{}{}", &p1, &p2);
+        let three = |_: (), p1: String, p2: String, p3: String| format!("{}{}{}", &p1, &p2, &p3);
+        let four = |_: (), p1: String, p2: String, p3: String, p4: String| {
             format!("{}{}{}{}", &p1, &p2, &p3, &p4)
         };
-        let five = |_: &(), p1: String, p2: String, p3: String, p4: String, p5: String| {
+        let five = |_: (), p1: String, p2: String, p3: String, p4: String, p5: String| {
             format!("{}{}{}{}{}", &p1, &p2, &p3, &p4, &p5)
         };
         let six =
-            |_: &(), p1: String, p2: String, p3: String, p4: String, p5: String, p6: String| {
+            |_: (), p1: String, p2: String, p3: String, p4: String, p5: String, p6: String| {
                 format!("{}{}{}{}{}{}", &p1, &p2, &p3, &p4, &p5, &p6)
             };
         let seven =
-            |_: &(),
+            |_: (),
              p1: String,
              p2: String,
              p3: String,
@@ -516,7 +516,7 @@ mod tests {
              p5: String,
              p6: String,
              p7: String| format!("{}{}{}{}{}{}{}", &p1, &p2, &p3, &p4, &p5, &p6, &p7);
-        let unreachable = |_: &()| unreachable!();
+        let unreachable = |_: ()| unreachable!();
         let router = router!(
             GET /users => zero,
             GET /users/{p1: String} => one,
